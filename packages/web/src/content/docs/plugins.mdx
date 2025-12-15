@@ -588,12 +588,12 @@ Install and use npm packages in your plugin:
 ```ts title=".opencode/plugin/github-integration.ts"
 import type { Plugin } from "@opencode-ai/plugin"
 import { tool } from "@opencode-ai/plugin"
+// Import external dependencies at top level
+import { Octokit } from "octokit"
 
 export const GitHubIntegration: Plugin = async (ctx) => {
-  // Import external dependencies
-  // Make sure to add them to package.json in .opencode/plugin/
-  const { Octokit } = await import("octokit")
-  
+  // Initialize external library
+  // Make sure to add dependencies to package.json in .opencode/plugin/
   const octokit = new Octokit({
     auth: process.env.GITHUB_TOKEN,
   })
