@@ -7,6 +7,10 @@ Plugins allow you to extend OpenCode by hooking into various events and customiz
 
 For examples, check out the [plugins](/docs/ecosystem#plugins) created by the community.
 
+:::note
+**Implementation reference**: See the [plugin loader](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/plugin/index.ts) and [type definitions](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts) in the source code for implementation details.
+:::
+
 ---
 
 ## Create a plugin
@@ -28,6 +32,8 @@ Plugins can also be installed from:
 - **npm packages**: Add plugin names to your config (see [Installation](#installation))
 - **GitHub repositories**: Reference GitHub repos directly in your config
 - **Local file paths**: Use `file://` URLs for local development
+
+> **Implementation**: Plugin loading is handled in [config.ts](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/config/config.ts#L291-L304) and [plugin/index.ts](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/plugin/index.ts#L29-L46)
 
 ---
 
@@ -51,6 +57,8 @@ The plugin function receives a `PluginInput` object with:
 - `client`: OpenCode SDK client for AI interactions, session management, and API calls
 - `$`: Bun's [shell API](https://bun.com/docs/runtime/shell) for executing commands
 
+> **Type definition**: [`PluginInput`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L26-L32) in `@opencode-ai/plugin`
+
 ---
 
 ### TypeScript support
@@ -67,9 +75,13 @@ export const MyPlugin: Plugin = async ({ project, client, $, directory, worktree
 }
 ```
 
+> **Type definition**: [`Plugin`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L34) type in `@opencode-ai/plugin`
+
 ---
 
 ## Installation
+
+> **Implementation**: Plugin installation is handled by [`BunProc.install()`](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/bun/index.ts#L63-L113)
 
 ### From config file
 
@@ -137,15 +149,21 @@ OpenCode exposes these methods for plugin management:
 - `Plugin.trigger(name, input, output)`: Trigger a specific hook across all plugins
 - `Plugin.list()`: Get list of all loaded plugin hooks
 
+> **Implementation**: See [`Plugin.init()`](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/plugin/index.ts#L76-L91), [`Plugin.trigger()`](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/plugin/index.ts#L55-L70), and [`Plugin.list()`](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/plugin/index.ts#L72-L74) in the source code
+
 ---
 
 ## Available hooks
 
 Plugins can implement any of the following hooks to extend OpenCode's behavior:
 
+> **Type definition**: All hooks are defined in the [`Hooks` interface](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L145-L192)
+
 ### Configuration hook
 
 Modify OpenCode's configuration at startup:
+
+> **Hook definition**: [`config` hook](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L147) | **Usage**: Called in [`Plugin.init()`](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/plugin/index.ts#L78-L81)
 
 ```ts title=".opencode/plugin/config-modifier.ts"
 import type { Plugin } from "@opencode-ai/plugin"
@@ -175,6 +193,8 @@ The `config` hook receives the full OpenCode configuration and can modify it in 
 ### Event hook
 
 Subscribe to system-wide events:
+
+> **Hook definition**: [`event` hook](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L146) | **Usage**: Subscribed to event bus in [`Plugin.init()`](https://github.com/itlackey/opencode/blob/main/packages/opencode/src/plugin/index.ts#L82-L89)
 
 ```ts title=".opencode/plugin/event-logger.ts"
 import type { Plugin } from "@opencode-ai/plugin"
@@ -253,6 +273,8 @@ export const EventLogger: Plugin = async (ctx) => {
 
 ### Tool hooks
 
+> **Hook definitions**: [`tool`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L148-L150), [`tool.execute.before`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L167-L170), [`tool.execute.after`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L171-L178) | **Tool helper**: [`tool()` function](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/tool.ts#L10-L17)
+
 #### Custom tools
 
 Add custom tools that OpenCode can use:
@@ -325,6 +347,8 @@ export const ToolInterceptor: Plugin = async (ctx) => {
 
 ### Chat hooks
 
+> **Hook definitions**: [`chat.message`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L155-L158), [`chat.params`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L162-L165)
+
 #### Message hook
 
 Process new messages:
@@ -382,6 +406,8 @@ export const ParamsModifier: Plugin = async (ctx) => {
 
 Control permission requests:
 
+> **Hook definition**: [`permission.ask`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L166)
+
 ```ts title=".opencode/plugin/auto-allow.ts"
 import type { Plugin } from "@opencode-ai/plugin"
 
@@ -410,6 +436,8 @@ export const AutoAllow: Plugin = async (ctx) => {
 ### Authentication hook
 
 Add custom authentication providers:
+
+> **Hook definition**: [`auth`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L151) | **AuthHook type**: [`AuthHook` interface](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L36-L102)
 
 ```ts title=".opencode/plugin/custom-auth.ts"
 import type { Plugin } from "@opencode-ai/plugin"
@@ -483,6 +511,8 @@ export const CustomAuth: Plugin = async (ctx) => {
 :::warning
 Experimental hooks may change in future versions without notice.
 :::
+
+> **Hook definitions**: [`experimental.chat.messages.transform`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L179-L187), [`experimental.text.complete`](https://github.com/itlackey/opencode/blob/main/packages/plugin/src/index.ts#L188-L191)
 
 #### Messages transform
 
